@@ -58,6 +58,6 @@
         ports:
           - "80:80"
 
-     - name: List all containers
+    - name: List all containers
       docker_container_info:
         name: '*'
