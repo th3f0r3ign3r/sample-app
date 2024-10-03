@@ -9,10 +9,8 @@
 
     - name: Ensure Docker is installed
       apt:
-        name: docker
+        name: docker.io
         state: present
-      notify:
-        - Start Docker service
 
     - name: Ensure Docker is started
       service:
@@ -20,9 +18,20 @@
         state: started
         enabled: true
 
+    - name: Ensure MySQL client is installed (for Ubuntu/Debian)
+      apt:
+        name: mysql-client
+        state: present
+      when: ansible_os_family == "Debian"
+
     - name: Pull the Docker image from Docker Hub
       docker_image:
         name: th3f0r31gn3r/sample-app:latest
+        source: pull
+
+    - name: Pull MySQL Docker image from Docker Hub
+      docker_image:
+        name: mysql:5.7
         source: pull
 
     - name: Run the MySQL container
@@ -31,7 +40,9 @@
         image: mysql:5.7
         state: started
         restart_policy: always
-        environment:
+        ports:
+          - "3306:3306"
+        env:
           MYSQL_DATABASE: app_database
           MYSQL_USER: app_user
           MYSQL_PASSWORD: app_password
@@ -41,13 +52,20 @@
 
     - name: Wait for MySQL to start
       wait_for:
-        host: db
+        host: 127.0.0.1
         port: 3306
-        timeout: 60
+        delay: 10
+        timeout: 300
+        state: started
 
-    - name: List all containers
-      docker_container_info:
-        name: '*'
+    - name: Test MySQL connection
+      command: mysql -h 127.0.0.1 -u app_user -papp_password -e "SHOW DATABASES;"
+      # register: mysql_test_result
+      # ignore_errors: yes
+
+    # - name: Check MySQL connection result
+    #   debug:
+    #     msg: "{{ mysql_test_result.stdout }}"
 
     - name: Run the app docker container
       docker_container:
@@ -58,6 +76,11 @@
         ports:
           - "80:80"
 
-    - name: List all containers
-      docker_container_info:
-        name: '*'
+    # - name: List all containers
+    #   docker_container_info:
+    #     name: '*'
+    #   register: docker_containers
+
+    # - name: Debug container info
+    #   debug:
+    #     msg: "{{ docker_containers }}"
