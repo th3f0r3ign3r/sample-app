@@ -1,0 +1,76 @@
+auth_enabled: false
+
+# configure le serveur HTTP et gRPC de Loki
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9096
+
+# Cette section configure l’Ingester, qui est le composant de Loki qui reçoit les logs, les compresse en “chunks”, et les écrit dans le stockage à long terme
+ingester:
+  wal:
+    enabled: false
+  lifecycler:
+    address: 127.0.0.1
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+    final_sleep: 0s
+  chunk_idle_period: 1h       # Any chunk not receiving new logs in this time will be flushed
+  max_chunk_age: 1h           # All chunks will be flushed when they hit this age, default is 1h
+  chunk_target_size: 1048576  # Loki will attempt to build chunks up to 1.5MB, flushing first if chunk_idle_period or max_chunk_age is reached first
+  chunk_retain_period: 30s    # Must be greater than index read cache TTL if using an index cache (Default index read cache TTL is 5m)
+  max_transfer_retries: 0     # Chunk transfers disabled
+
+#  Cette section configure le schéma de stockage des données de Loki. Il définit comment les données sont indexées et stockées
+schema_config:
+  configs:
+    - from: 2020-10-24
+      store: boltdb-shipper
+      object_store: filesystem
+      schema: v11
+      index:
+        prefix: index_
+        period: 24h
+
+# Cette section configure le stockage à long terme des données de Loki. ça utilise boltdb-shipper et filesystem pour le stockage
+storage_config:
+  boltdb_shipper:
+    active_index_directory: /tmp/loki/boltdb-shipper-active
+    cache_location: /tmp/loki/boltdb-shipper-cache
+    cache_ttl: 24h         # Can be increased for faster performance over longer query periods, uses more disk space
+    shared_store: filesystem
+  filesystem:
+    directory: /tmp/loki/chunks
+
+#  Cette section configure le compacteur, qui est utilisé pour compacter l’index de Loki et améliorer les performances de requête
+compactor:
+  working_directory: /tmp/loki/boltdb-shipper-compactor
+  shared_store: filesystem
+
+# Cette section configure les limites pour contrôler l’utilisation des ressources par les utilisateurs et les locataires
+limits_config:
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+
+# Cette section configure le stockage des chunks, qui est où Loki stocke les logs compressés
+chunk_store_config:
+  max_look_back_period: 0s
+
+# Cette section configure le gestionnaire de table, qui s’occupe de la création et de la suppression des tables/indexes dans le backend de stockage
+table_manager:
+  retention_deletes_enabled: false
+  retention_period: 0s
+
+# Cette section configure le Ruler, qui évalue les règles d’alerte contre les données de Loki
+ruler:
+  storage:
+    type: local
+    local:
+      directory: /tmp/loki/rules
+  rule_path: /tmp/loki/rules-temp
+  alertmanager_url: http://localhost:9093
+  ring:
+    kvstore:
+      store: inmemory
+  enable_api: true

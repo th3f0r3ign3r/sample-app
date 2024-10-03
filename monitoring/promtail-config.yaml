@@ -1,0 +1,22 @@
+# Cette section configure le serveur HTTP et gRPC de Promtail
+server:
+  http_listen_port: 9080
+  grpc_listen_port: 0
+
+#  Cette section configure le fichier où Promtail stocke les positions des fichiers de logs qu’il est en train de lire. Cela permet à Promtail de reprendre là où il s’est arrêté si le service est redémarré
+positions:
+  filename: /tmp/positions.yaml
+
+# Cette section configure les clients qui envoient les logs à Loki. Dans ce cas, il y a un seul client qui envoie les logs à l’adresse http://localhost:3100/loki/api/v1/push
+clients:
+  - url: http://localhost:4100/loki/api/v1/push
+
+# Cette section configure les “jobs” de collecte de logs. Chaque job définit un ensemble de cibles à gratter et des labels à attacher aux logs
+scrape_configs:
+- job_name: system
+  static_configs:
+  - targets:
+      - localhost
+    labels:
+      job: varlogs
+      __path__: /var/log/*log
