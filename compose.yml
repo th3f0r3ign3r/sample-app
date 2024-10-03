@@ -29,10 +29,8 @@ services:
       DB_DATABASE: app_database
       DB_USERNAME: app_user
       DB_PASSWORD: app_password
-    logging: *loki-logging
     depends_on:
       - db
-      - loki
 
   db:
     image: mysql:5.7
