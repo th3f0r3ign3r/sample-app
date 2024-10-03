@@ -22,8 +22,8 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: List all container
-        run: docker ps
+      - name: Build and push Docker image with Buildx
+        run: docker buildx build --push -t th3f0r31gn3r/sample-app:latest .
 
       - name: Run docker compose
         run: docker compose up -d
@@ -31,5 +31,13 @@ jobs:
       - name: List all container
         run: docker ps
 
-      - name: Build and push Docker image with Buildx
-        run: docker buildx build --push -t th3f0r31gn3r/sample-app:latest .
+      - name: Wait for services to start
+        run: |
+          docker exec app bash -c "while ! nc -z db 3306; do sleep 1; done"
+          sleep 60
+
+      - name: Run laravel test
+        run: docker exec app php artisan test
+
+      - name: Put down the containers
+        run: docker compose down
