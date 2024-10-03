@@ -1,10 +1,15 @@
 ---
-- hosts: your_vm_group
+- hosts: my_vm
   become: true
   tasks:
+    - name: Ensure Ubuntu is up to date
+      apt:
+        update_cache: yes
+        upgrade: dist
+
     - name: Ensure Docker is installed
       apt:
-        name: docker.io
+        name: docker
         state: present
       notify:
         - Start Docker service
@@ -20,11 +25,39 @@
         name: th3f0r31gn3r/sample-app:latest
         source: pull
 
-    - name: Run the Docker container
+    - name: Run the MySQL container
       docker_container:
-        name: sample-app-saas
+        name: db
+        image: mysql:5.7
+        state: started
+        restart_policy: always
+        environment:
+          MYSQL_DATABASE: app_database
+          MYSQL_USER: app_user
+          MYSQL_PASSWORD: app_password
+          MYSQL_ROOT_PASSWORD: app_root_password
+        volumes:
+          - db_data:/var/lib/mysql
+
+    - name: Wait for MySQL to start
+      wait_for:
+        host: db
+        port: 3306
+        timeout: 60
+
+    - name: List all containers
+      docker_container_info:
+        name: '*'
+
+    - name: Run the app docker container
+      docker_container:
+        name: app
         image: th3f0r31gn3r/sample-app:latest
         state: started
         restart_policy: always
         ports:
           - "80:80"
+
+     - name: List all containers
+      docker_container_info:
+        name: '*'

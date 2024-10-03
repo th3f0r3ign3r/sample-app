@@ -6,6 +6,27 @@ on:
       - main
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Run docker compose
+        run: docker compose up -d
+
+      - name: List all container
+        run: docker ps
+
+      - name: Wait for services to start
+        run: |
+          docker exec app bash -c "while ! nc -z db 3306; do sleep 1; done"
+          sleep 60
+
+      - name: Run laravel test
+        run: docker exec app php artisan test
+
+      - name: Put down the containers
+        run: docker compose down
+
   build:
     runs-on: ubuntu-latest
 
@@ -24,20 +45,3 @@ jobs:
 
       - name: Build and push Docker image with Buildx
         run: docker buildx build --push -t th3f0r31gn3r/sample-app:latest .
-
-      - name: Run docker compose
-        run: docker compose up -d
-
-      - name: List all container
-        run: docker ps
-
-      - name: Wait for services to start
-        run: |
-          docker exec app bash -c "while ! nc -z db 3306; do sleep 1; done"
-          sleep 60
-
-      - name: Run laravel test
-        run: docker exec app php artisan test
-
-      - name: Put down the containers
-        run: docker compose down
