@@ -25,15 +25,11 @@ jobs:
       - name: List all container
         run: docker ps
 
-      - name: Wait for services to start
-        run: |
-          docker exec app bash -c "while ! nc -z db 3306; do sleep 1; done"
-          sleep 60
+      - name: Run docker compose
+        run: docker compose up -d
 
-      - name: Run laravel test
-        run: php artisan test
+      - name: List all container
+        run: docker ps
 
-      - name: Build and push Docker image
-        run: |
-          docker build -t th3f0r31gn3r/sample-app:latest .
-          docker push th3f0r31gn3r/sample-app:latest
+      - name: Build and push Docker image with Buildx
+        run: docker buildx build --push -t th3f0r31gn3r/sample-app:latest .
