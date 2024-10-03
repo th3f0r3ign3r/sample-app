@@ -1,0 +1,30 @@
+---
+- hosts: your_vm_group
+  become: true
+  tasks:
+    - name: Ensure Docker is installed
+      apt:
+        name: docker.io
+        state: present
+      notify:
+        - Start Docker service
+
+    - name: Ensure Docker is started
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Pull the Docker image from Docker Hub
+      docker_image:
+        name: th3f0r31gn3r/sample-app:latest
+        source: pull
+
+    - name: Run the Docker container
+      docker_container:
+        name: sample-app-saas
+        image: th3f0r31gn3r/sample-app:latest
+        state: started
+        restart_policy: always
+        ports:
+          - "80:80"
