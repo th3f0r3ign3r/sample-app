@@ -52,14 +52,14 @@
 
     - name: Wait for MySQL to start
       wait_for:
-        host: 127.0.0.1
+        host: db
         port: 3306
         delay: 10
         timeout: 300
         state: started
 
     - name: Test MySQL connection
-      command: mysql -h 127.0.0.1 -u app_user -papp_password -e "SHOW DATABASES;"
+      command: mysql -h db -u app_user -papp_password -e "SHOW DATABASES;"
       # register: mysql_test_result
       # ignore_errors: yes
 
